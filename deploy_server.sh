@@ -9,27 +9,18 @@ git pull origin master
 
 # --- PHP (Laravel) ---
 echo "⚙️ Установка зависимостей..."
-php8.3 composer install --no-dev --optimize-autoloader
+composer install --no-dev --optimize-autoloader
 
 # --- Очистка старого кеша ---
 echo "🧹 Очистка кеша..."
 php8.3 artisan optimize:clear
 
-# --- Production кеш (ВАЖНО) ---
+# --- Production кеш ---
 echo "⚡ Кеширование..."
-php8.3 artisan cache:clear        # Очистить общий кэш
-php8.3 artisan config:clear       # Очистить кеш конфигураций
-php8.3 artisan route:clear        # Очистить кеш маршрутов
-php8.3 artisan view:clear         # Очистить кеш Blade шаблонов
-php8.3 artisan event:clear        # Очистить кеш событий (если используется)
-
-# --- Frontend (Vite + React) ---
-echo "🎨 Сборка фронта не выполняется ........"
-
+php8.3 artisan cache:clear
+php8.3 artisan config:clear
+php8.3 artisan route:clear
+php8.3 artisan view:clear
+php8.3 artisan event:clear
 
 echo "✅ Деплой завершён"
-
-
-#sh deploy_server.sh
-
-
