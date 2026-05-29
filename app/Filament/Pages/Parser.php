@@ -15,9 +15,14 @@ class Parser extends Page
     public function runParser(){
 
         $result = Process::path(base_path())
+            ->env([
+                'PLAYWRIGHT_BROWSERS_PATH' => '0',
+            ])
             ->run('/usr/bin/node parser.js');
 
-        $this->output = $result->output() . "\n" . $result->errorOutput();
+        $this->output =
+            $result->output() . "\n\n" .
+            $result->errorOutput();
 
 
 

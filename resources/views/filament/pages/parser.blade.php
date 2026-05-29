@@ -5,10 +5,10 @@
     </x-filament::button>
 
     <div class="mt-5">
-        {{ $output }}
+        <pre>{{ $output }}</pre>
     </div>
     <div>
-       
+
     </div>
 
 </x-filament::page>
