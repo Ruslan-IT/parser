@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 (async () => {
 
     const browser = await chromium.launch({
-        headless: false
+        headless: true
     });
 
     const page = await browser.newPage();
@@ -24,6 +24,6 @@ import { chromium } from 'playwright';
 
     console.log(html.substring(0, 1000));
 
-    await browser.close();
+    //await browser.close();
 
 })();
