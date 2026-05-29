@@ -14,20 +14,10 @@ class Parser extends Page
 
     public function runParser(){
 
-        //$result = Process::run('"C:\Program Files\nodejs\node.exe" ' . base_path('parser.js'));
-
-        // нужно будет изменить путь
-
-        //$result = Process::run('node ' . base_path('parser.js'));
-
-
-
         $result = Process::path(base_path())
-            ->run('/usr/bin/node parser.js');
+            ->run('/usr/bin/node -v');
 
         $this->output = $result->output();
-
-        //$this->output = $result->errorOutput();
 
 
 
