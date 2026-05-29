@@ -19,12 +19,17 @@ class Parser extends Page
         // нужно будет изменить путь
 
         //$result = Process::run('node ' . base_path('parser.js'));
-        $result = Process::run('/usr/bin/node ' . base_path('parser.js'));
+
+
+
+        $result = Process::path(base_path())
+            ->run('/usr/bin/node parser.js');
+
         // узнается на сервере командой: which node
 
-        //$this->output = $result->output();
+        $this->output = $result->output();
 
-        $this->output = $result->errorOutput();
+        //$this->output = $result->errorOutput();
 
 
 
