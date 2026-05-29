@@ -9,7 +9,7 @@ git pull origin master
 
 # --- PHP (Laravel) ---
 echo "⚙️ Установка зависимостей..."
-php8.3 composer.phar install --no-dev --optimize-autoloader
+php8.3 composer install --no-dev --optimize-autoloader
 
 # --- Очистка старого кеша ---
 echo "🧹 Очистка кеша..."
