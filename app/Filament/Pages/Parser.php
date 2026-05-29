@@ -15,9 +15,9 @@ class Parser extends Page
     public function runParser(){
 
         $result = Process::path(base_path())
-            ->run('/usr/bin/node -v');
+            ->run('/usr/bin/node parser.js');
 
-        $this->output = $result->output();
+        $this->output = $result->output() . "\n" . $result->errorOutput();
 
 
 

@@ -8,7 +8,7 @@
         {{ $output }}
     </div>
     <div>
-        {{ $this->output }}
+       
     </div>
 
 </x-filament::page>
