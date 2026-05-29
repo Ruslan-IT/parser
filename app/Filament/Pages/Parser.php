@@ -27,9 +27,9 @@ class Parser extends Page
 
         // узнается на сервере командой: which node
 
-        $this->output = $result->output();
+        //$this->output = $result->output();
 
-        //$this->output = $result->errorOutput();
+        $this->output = $result->errorOutput();
 
 
 
