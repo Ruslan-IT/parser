@@ -25,11 +25,9 @@ class Parser extends Page
         $result = Process::path(base_path())
             ->run('/usr/bin/node parser.js');
 
-        // узнается на сервере командой: which node
+        $this->output = $result->output();
 
-        //$this->output = $result->output();
-
-        $this->output = $result->errorOutput();
+        //$this->output = $result->errorOutput();
 
 
 

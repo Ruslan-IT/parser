@@ -14,16 +14,10 @@ import { chromium } from 'playwright';
 
     await page.waitForTimeout(3000);
 
-
-    const title  = await page.title();
+    const title = await page.title();
 
     console.log('title:', title);
 
-
-    const html = await page.content();
-
-    console.log(html.substring(0, 1000));
-
-    //await browser.close();
+    await browser.close();
 
 })();
