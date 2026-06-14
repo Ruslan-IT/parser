@@ -74,7 +74,15 @@ class Parser extends Page
         $scriptPath = base_path('parser.js');
 
         // Передаём URL как третий аргумент
-        $result = Process::path(base_path())->run([$nodePath, $scriptPath, $this->url]);
+        $result = Process::path(base_path())
+            ->env([
+                'PLAYWRIGHT_BROWSERS_PATH' => 0,
+            ])
+            ->run([
+                $nodePath,
+                base_path('parser.js'),
+                $this->url,
+            ]);
 
         $output = $result->output();
         $errorOutput = $result->errorOutput();
