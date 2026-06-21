@@ -38,9 +38,11 @@ class MatchGamesTable
                     ->label('Дата матча')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
-                TextColumn::make('odds_json')
-                    ->label('Коэффициенты (1X2)')
-                    ->formatStateUsing(fn ($state) => $state ? implode(' | ', json_decode($state, true)) : '—'),
+
+                TextColumn::make('odd_home')->label('Кэф 1')->sortable(),
+                TextColumn::make('odd_draw')->label('Кэф X')->sortable(),
+                TextColumn::make('odd_away')->label('Кэф 2')->sortable(),
+
                 TextColumn::make('created_at')
                     ->label('Дата импорта')
                     ->dateTime('d.m.Y H:i')
@@ -57,10 +59,16 @@ class MatchGamesTable
             ->recordActions([
                 EditAction::make(),
             ])
+            ->contentGrid([
+                'md' => 1,
+                'xl' => 1,
+            ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
             ]);
     }
+
+
 }

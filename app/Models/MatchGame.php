@@ -19,7 +19,12 @@ class MatchGame extends Model
         'away_score',
         'betexplorer_id',
         'url',
-        'odds_json',
+        'odd_home',
+        'odd_draw',
+        'odd_away',
+        'season',          // добавим позже
+        'match_status',    // 'scheduled' или 'finished'
+
     ];
     public function league()
     {
@@ -35,4 +40,9 @@ class MatchGame extends Model
     {
         return $this->belongsTo(Team::class, 'away_team_id');
     }
+    public function asianHandicaps()
+    {
+        return $this->hasMany(AsianHandicap::class);
+    }
+
 }

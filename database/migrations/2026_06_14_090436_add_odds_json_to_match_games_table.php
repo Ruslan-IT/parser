@@ -12,7 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('match_games', function (Blueprint $table) {
-            $table->json('odds_json')->nullable()->after('url');
+            // Добавляем три колонки для коэффициентов 1X2
+            $table->decimal('odd_home', 8, 3)->nullable()->after('away_score');
+            $table->decimal('odd_draw', 8, 3)->nullable()->after('odd_home');
+            $table->decimal('odd_away', 8, 3)->nullable()->after('odd_draw');
+
+            // Удаляем старое JSON-поле (если оно существует)
+            $table->dropColumn('odds_json');
         });
     }
 
@@ -22,7 +28,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('match_games', function (Blueprint $table) {
-            $table->dropColumn('odds_json');
+            $table->dropColumn(['odd_home', 'odd_draw', 'odd_away']);
+            $table->json('odds_json')->nullable(); // восстанавливаем
         });
     }
 };

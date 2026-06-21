@@ -5,19 +5,15 @@
             <div class="space-y-4">
                 {{-- Поле для ссылки --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1 mb-4">
-                        Ссылка на страницу BetExplorer
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Ссылки на страницы турниров (каждая с новой строки)
                     </label>
-                    <br>
-                    <input type="text"
-                           wire:model="url"
-                           placeholder="https://www.betexplorer.com/football/..."
-                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm mb-4"
-                           style="width: 100%; min-width: 300px;"
-                    >
-                    <br>
-                    <p class="mt-1 text-xs text-gray-500 mb-4">
-                        Пример: https://www.betexplorer.com/football/france/ligue-1/angers-lille/lYTqhFje/
+                    <textarea style="width: 100%" wire:model="urls"
+                              rows="5"
+                              placeholder="https://www.betexplorer.com/football/brazil/serie-b/&#10;https://www.betexplorer.com/football/brazil/serie-b-2025/&#10;https://www.betexplorer.com/football/brazil/serie-b-2024/"
+                              class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Укажите по одной ссылке на каждый сезон. Например, для сезона 2026 используйте ссылку без года, для остальных – с годом в конце.
                     </p>
                 </div>
 
@@ -32,6 +28,18 @@
                         Идёт парсинг и сохранение данных...
                     </div>
                 </div>
+
+
+                <div class="mt-4">
+                    <x-filament::button wire:click="collectAh" wire:loading.attr="disabled">
+                        {{ __('Собрать азиатские форы (AH)') }}
+                    </x-filament::button>
+                    <div wire:loading wire:target="collectAh" class="mt-2 text-sm text-gray-500">
+                        Идёт сбор азиатских фор, это может занять некоторое время...
+                    </div>
+                </div>
+
+
             </div>
         </x-filament::fieldset>
 
