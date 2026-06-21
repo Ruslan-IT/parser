@@ -161,13 +161,36 @@ import { chromium } from 'playwright';
                     // Определяем balanced и purchase (как было)
                     let balanced = null;
                     let minDiff = Infinity;
+                    let bestScore = Infinity;
+
                     for (const line of lines) {
-                        const diff = Math.abs(line.homeOdds - line.awayOdds);
-                        if (diff < minDiff) {
-                            minDiff = diff;
+
+                        const homeOdds = line.homeOdds;
+                        const awayOdds = line.awayOdds;
+
+                        // Отбрасываем мусорные коэффициенты
+                        if (
+                            homeOdds < 1.20 ||
+                            awayOdds < 1.20 ||
+                            homeOdds > 10 ||
+                            awayOdds > 10
+                        ) {
+                            continue;
+                        }
+
+                        const diff = Math.abs(homeOdds - awayOdds);
+
+                        const score =
+                            diff +
+                            Math.abs(homeOdds - 2.0) +
+                            Math.abs(awayOdds - 2.0);
+
+                        if (score < bestScore) {
+                            bestScore = score;
                             balanced = line;
                         }
                     }
+
 
                     let purchase = null;
                     if (balanced) {
