@@ -79,8 +79,13 @@ class Parser extends Page
             return;
         }
 
+
+
         $nodePath = env('NODE_PATH', 'node');
         $scriptPath = base_path('parser.js');
+
+
+
 
         $allMatches = [];
 

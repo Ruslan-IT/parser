@@ -78,8 +78,7 @@
                                 </td>
                                 <td class="py-3 px-6">{{ $match['match_date'] ? \Carbon\Carbon::parse($match['match_date'])->format('d.m.Y') : '—' }}</td>
                                 <td class="py-3 px-6">
-                                    @php $odds = json_decode($match['odds_json'], true); @endphp
-                                    {{ $odds ? implode(' | ', $odds) : '—' }}
+                                    {{ $match['odd_home'] ?? '—' }} | {{ $match['odd_draw'] ?? '—' }} | {{ $match['odd_away'] ?? '—' }}
                                 </td>
                             </tr>
                         @endforeach
