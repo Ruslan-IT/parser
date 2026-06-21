@@ -137,6 +137,13 @@ import { chromium } from 'playwright';
                             return;
                         }
 
+
+                        // Проверка: индексы должны быть кратны 0.5 (целые форы)
+                        const isHalfIndex = (num) => Math.abs(num % 0.5) < 0.001;
+                        if (!isHalfIndex(homeHandicap) || !isHalfIndex(awayHandicap)) {
+                            return; // пропускаем дробные индексы (0.25, 0.75, 1.25 и т.д.)
+                        }
+
                         // Извлекаем коэффициенты из targetRow
                         const oddsCells = targetRow.querySelectorAll('.table-main__detail-odds');
                         let homeOdds = null, awayOdds = null;
