@@ -250,6 +250,47 @@ class Parser extends Page
     }
 
 
+    public function collectAhBatch()
+    {
+        // Подсчитываем количество матчей без AH
+        $total = MatchGame::doesntHave('asianHandicaps')
+            ->whereNotNull('url')
+            ->count();
+
+        if ($total == 0) {
+            $this->output = "✅ Все матчи уже имеют азиатские форы.";
+            return;
+        }
+
+        $limit = 20; // размер пакета (можно сделать настраиваемым через .env)
+        $offset = 0;
+        $processed = 0;
+
+        $this->output = "⏳ Начинаю пакетный сбор AH (всего $total матчей)...\n";
+
+        while ($offset < $total) {
+            $end = min($offset + $limit, $total);
+            $this->output .= "⏳ Обработка матчей с " . ($offset + 1) . " по $end ...\n";
+
+            Artisan::call('ah:collect', [
+                '--limit' => $limit,
+                '--offset' => $offset,
+            ]);
+
+            $output = Artisan::output();
+            $this->output .= $output . "\n";
+
+            $processed += $limit;
+            $offset += $limit;
+
+            // Небольшая задержка, чтобы снизить нагрузку на сервер
+            sleep(1);
+        }
+
+        $this->output .= "✅ Пакетный сбор AH завершён! Обработано $processed матчей.";
+    }
+
+
 
     /**
      * Преобразует текстовую дату с BetExplorer в формат Y-m-d H:i:s

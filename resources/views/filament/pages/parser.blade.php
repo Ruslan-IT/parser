@@ -40,6 +40,16 @@
                 </div>
 
 
+                <div class="mt-4">
+                    <x-filament::button wire:click="collectAhBatch" wire:loading.attr="disabled" class="mr-2">
+                        {{ __('Собрать AH пакетами (без таймаута)') }}
+                    </x-filament::button>
+                    <div wire:loading wire:target="collectAhBatch" class="mt-2 text-sm text-gray-500">
+                        Идёт пакетный сбор AH, это может занять несколько минут...
+                    </div>
+                </div>
+
+
             </div>
         </x-filament::fieldset>
 

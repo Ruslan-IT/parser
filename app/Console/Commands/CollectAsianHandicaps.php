@@ -9,13 +9,21 @@ use Illuminate\Support\Facades\Process;
 
 class CollectAsianHandicaps extends Command
 {
-    protected $signature = 'ah:collect {--limit=100} {--match-id=}';
+    protected $signature = 'ah:collect {--limit=100} {--offset=0} {--match-id=}';
     protected $description = 'Collect Asian Handicap odds for matches';
 
     public function handle()
     {
+
+        $limit = $this->option('limit');
+        $offset = $this->option('offset');
+
+
         $query = MatchGame::doesntHave('asianHandicaps')
-            ->whereNotNull('url');
+            ->whereNotNull('url')
+            ->orderBy('id')
+            ->skip($offset)
+            ->take($limit);
 
 
         if ($this->option('match-id')) {
