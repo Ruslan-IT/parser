@@ -238,7 +238,7 @@ class Parser extends Page
         $this->output = "⏳ Запуск сбора азиатских фор (AH)...";
 
         // Выполняем команду синхронно
-        Artisan::call('ah:collect', ['--limit' => 1000]);
+        Artisan::call('ah:collect', ['--limit' => 50]);
 
         $output = Artisan::output();
 
