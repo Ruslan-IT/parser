@@ -154,6 +154,14 @@ import { chromium } from 'playwright';
                         if (homeOdds === null || awayOdds === null || isNaN(homeOdds) || isNaN(awayOdds)) return;
 
                         lines.push({ homeHandicap, awayHandicap, homeOdds, awayOdds });
+
+                        console.log('LINE:', {
+                            homeHandicap,
+                            awayHandicap,
+                            homeOdds,
+                            awayOdds
+                        });
+
                     });
 
                     if (lines.length === 0) return null;
@@ -185,9 +193,25 @@ import { chromium } from 'playwright';
                             Math.abs(homeOdds - 2.0) +
                             Math.abs(awayOdds - 2.0);
 
+                        console.log('BALANCED CHECK:', {
+                            handicap: `${line.homeHandicap}/${line.awayHandicap}`,
+                            homeOdds,
+                            awayOdds,
+                            diff,
+                            score
+                        });
+
+
                         if (score < bestScore) {
                             bestScore = score;
                             balanced = line;
+
+                            console.log('NEW BALANCED:', {
+                                handicap: `${line.homeHandicap}/${line.awayHandicap}`,
+                                homeOdds,
+                                awayOdds,
+                                score
+                            });
                         }
                     }
 
@@ -284,9 +308,18 @@ import { chromium } from 'playwright';
         const oddDraw = oddsButtons[1]?.trim() || null;
         const oddAway = oddsButtons[2]?.trim() || null;
 
-        // Дата – последняя ячейка с классом h-text-right (colspan=2)
-        const dateText = await row.locator('.h-text-right').textContent();
-        const date = dateText?.trim() || null;
+        
+
+        // Дата – пробуем .table-main__datetime (для Fixtures), если нет – .h-text-right (для Results)
+        let date = null;
+        const dateTimeElem = row.locator('.table-main__datetime');
+        if (await dateTimeElem.count() > 0) {
+            date = await dateTimeElem.textContent();
+        } else {
+            const dateText = await row.locator('.h-text-right').textContent();
+            date = dateText?.trim() || null;
+        }
+        date = date?.trim() || null;
 
 
         // Извлечение сезона из URL (для турнирной страницы)

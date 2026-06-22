@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MatchGames\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -34,6 +35,13 @@ class MatchGamesTable
                 TextColumn::make('away_score')
                     ->label('Счёт (гости)')
                     ->sortable(),
+
+                TextColumn::make('url')
+                    ->label('Ссылка')
+                    ->url(fn ($record) => $record->url . '#ah/')
+                    ->openUrlInNewTab()
+                    ->formatStateUsing(fn () => 'Открыть'),
+
                 TextColumn::make('match_date')
                     ->label('Дата матча')
                     ->dateTime('d.m.Y H:i')
@@ -57,6 +65,13 @@ class MatchGamesTable
                     ->relationship('homeTeam', 'name'),
             ])
             ->recordActions([
+                EditAction::make(),
+                Action::make('openBetExplorer')
+                    ->label('BetExplorer')
+                    ->icon('heroicon-o-globe-alt')
+                    ->url(fn ($record) => $record->url)
+                    ->openUrlInNewTab(),
+
                 EditAction::make(),
             ])
             ->contentGrid([
