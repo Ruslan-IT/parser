@@ -262,7 +262,7 @@ class Parser extends Page
             return;
         }
 
-        $limit = 20; // размер пакета (можно сделать настраиваемым через .env)
+        $limit = 10; // размер пакета (можно сделать настраиваемым через .env)
         $offset = 0;
         $processed = 0;
 
