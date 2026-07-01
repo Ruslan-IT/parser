@@ -26,6 +26,12 @@ class MatchGame extends Model
         'match_status',    // 'scheduled' или 'finished'
 
     ];
+
+    protected $casts = [
+        'match_date' => 'datetime',
+    ];
+
+
     public function league()
     {
         return $this->belongsTo(League::class);
@@ -44,5 +50,20 @@ class MatchGame extends Model
     {
         return $this->hasMany(AsianHandicap::class);
     }
+
+    public function predictions()
+    {
+        return $this->hasMany(MatchPrediction::class);
+    }
+    public function criteriaValue()
+    {
+        return $this->hasOne(CriteriaValue::class);
+    }
+    public function matchPredictions()
+    {
+        return $this->hasMany(MatchPrediction::class);
+    }
+
+
 
 }

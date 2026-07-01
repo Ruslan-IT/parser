@@ -17,41 +17,144 @@
                     </p>
                 </div>
 
-                <br>
-
-                {{-- Кнопка запуска --}}
-                <div>
-                    <x-filament::button wire:click="runParser" wire:loading.attr="disabled">
-                        {{ __('Запустить парсер') }}
-                    </x-filament::button>
-                    <div wire:loading wire:target="runParser" class="mt-2 text-sm text-gray-500">
-                        Идёт парсинг и сохранение данных...
-                    </div>
-                </div>
-
-
-                <div class="mt-4">
-                    <x-filament::button wire:click="collectAh" wire:loading.attr="disabled">
-                        {{ __('Собрать азиатские форы (AH)') }}
-                    </x-filament::button>
-                    <div wire:loading wire:target="collectAh" class="mt-2 text-sm text-gray-500">
-                        Идёт сбор азиатских фор, это может занять некоторое время...
-                    </div>
-                </div>
-
-
-                <div class="mt-4">
-                    <x-filament::button wire:click="collectAhBatch" wire:loading.attr="disabled" class="mr-2">
-                        {{ __('Собрать AH пакетами (без таймаута)') }}
-                    </x-filament::button>
-                    <div wire:loading wire:target="collectAhBatch" class="mt-2 text-sm text-gray-500">
-                        Идёт пакетный сбор AH, это может занять несколько минут...
-                    </div>
-                </div>
-
-
             </div>
         </x-filament::fieldset>
+
+        <x-filament::fieldset label="🚀 Этап 1. Сбор данных" class="p-4">
+
+            <div class="flex flex-wrap gap-3">
+
+                <x-filament::button wire:click="runParser" wire:loading.attr="disabled">
+                    📥 Запустить парсер
+                </x-filament::button>
+
+                <x-filament::button wire:click="collectAh" wire:loading.attr="disabled">
+                    ⚽ Собрать AH
+                </x-filament::button>
+
+                <x-filament::button wire:click="collectAhBatch" wire:loading.attr="disabled">
+                    ⚡ Собрать AH пакетами
+                </x-filament::button>
+
+            </div>
+
+            <div wire:loading wire:target="runParser" class="mt-2 text-sm text-gray-500">
+                Идёт парсинг матчей...
+            </div>
+
+            <div wire:loading wire:target="collectAh" class="mt-2 text-sm text-gray-500">
+                Идёт сбор азиатских фор...
+            </div>
+
+            <div wire:loading wire:target="collectAhBatch" class="mt-2 text-sm text-gray-500">
+                Идёт пакетный сбор азиатских фор...
+            </div>
+
+        </x-filament::fieldset>
+
+
+        <x-filament::fieldset label="📊 Этап 2. Расчёт статистики" class="p-4">
+
+            <div class="flex flex-wrap gap-3">
+
+                <x-filament::button wire:click="calculateStats" wire:loading.attr="disabled">
+                    📈 Обновить статистику команд
+                </x-filament::button>
+
+                <x-filament::button wire:click="calculateCriteria" wire:loading.attr="disabled">
+                    📋 Рассчитать критерии 1–5
+                </x-filament::button>
+
+                <x-filament::button wire:click="calculatePoisson" wire:loading.attr="disabled">
+                    ⚽ Рассчитать критерий Пуассона
+                </x-filament::button>
+
+            </div>
+
+        </x-filament::fieldset>
+
+
+        <x-filament::fieldset label="🎯 Этап 3. Вероятности и прогнозы" class="p-4">
+
+            <div class="flex flex-wrap gap-3">
+
+                <x-filament::button wire:click="calculateProbabilities" wire:loading.attr="disabled">
+                    🎲 Рассчитать вероятности
+                </x-filament::button>
+
+                <x-filament::button wire:click="recalculateAverages" wire:loading.attr="disabled">
+                    📊 Пересчитать средние значения
+                </x-filament::button>
+
+            </div>
+
+        </x-filament::fieldset>
+
+
+        <x-filament::fieldset label="📄 Этап 4. Экспорт результатов" class="p-4">
+
+            <div class="flex flex-wrap gap-3">
+
+              {{--  <x-filament::button wire:click="exportCsv" wire:loading.attr="disabled">
+                    📑 Экспорт CSV
+                </x-filament::button>--}}
+
+                <x-filament::button wire:click="exportExcel" wire:loading.attr="disabled">
+                    📗 Экспорт Excel
+                </x-filament::button>
+
+            </div>
+
+        </x-filament::fieldset>
+
+
+        <x-filament::fieldset label="🧹 Сервис" class="p-4">
+
+            <div class="flex flex-wrap gap-3">
+
+                <x-filament::button
+                    wire:click="clearStats"
+                    color="danger"
+                    size="sm">
+                    Очистить статистику
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="clearCriteria"
+                    color="danger"
+                    size="sm">
+                    Очистить критерии
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="clearPredictions"
+                    color="danger"
+                    size="sm">
+                    Очистить прогнозы
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="clearHandicaps"
+                    color="danger"
+                    size="sm">
+                    Очистить AH
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="clearAll"
+                    color="danger"
+                    size="sm">
+                    🔥 Очистить всё
+                </x-filament::button>
+
+            </div>
+
+        </x-filament::fieldset>
+
+
+
+
+
 
         {{-- Вывод сообщения об успехе или ошибке --}}
         @if($output)
@@ -108,3 +211,19 @@
         </div>
     </div>
 </x-filament::page>
+
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.on('download-csv', (event) => {
+                const url = event[0].url;
+                // Создаём невидимую ссылку и кликаем по ней (обход блокировки всплывающих окон)
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = url.split('/').pop();
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+

@@ -11,23 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bet_results', function (Blueprint $table) {
+        Schema::create('criteria_categories', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('match_game_id');
-
-            $table->string('market');
-
-            $table->decimal('odds',8,3);
-
-            $table->enum('result',[
-                'WIN',
-                'LOSE',
-                'RETURN'
-            ]);
-
-            $table->decimal('payout',8,3);
-
+            $table->string('name', 50);
+            $table->integer('min_matches');
+            $table->integer('max_matches')->nullable();
             $table->timestamps();
         });
     }
@@ -37,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bet_results');
+        Schema::dropIfExists('criteria_categories');
     }
 };

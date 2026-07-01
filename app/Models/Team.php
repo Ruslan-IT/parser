@@ -24,4 +24,9 @@ class Team extends Model
     {
         return $this->hasMany(MatchGame::class, 'away_team_id');
     }
+    public function seasonStats()
+    {
+        return $this->hasMany(TeamSeasonStat::class);
+    }
+
 }

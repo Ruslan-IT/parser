@@ -323,13 +323,26 @@ import { chromium } from 'playwright';
 
 
         // Извлечение сезона из URL (для турнирной страницы)
+        // Извлечение сезона из URL (улучшенная версия)
         let season = null;
-        const seasonMatch = url.match(/\/(\d{4})\/?$/); // например, /2026/
+        const seasonMatch = url.match(/\/(\d{4})(?:\/|$)/);
         if (seasonMatch) {
             season = seasonMatch[1];
-        } else {
-            // Если год не указан в URL, используем текущий (или можно взять из выпадающего списка)
-            // Но для простоты оставим null
+        }
+        if (!season) {
+            const match = url.match(/serie-b-?(\d{4})/i);
+            if (match) {
+                season = match[1];
+            }
+        }
+        if (!season) {
+            try {
+                const title = await page.title();
+                const yearMatch = title.match(/\b(20\d{2})\b/);
+                if (yearMatch) {
+                    season = yearMatch[1];
+                }
+            } catch (e) {}
         }
 
 

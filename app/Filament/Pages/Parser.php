@@ -5,7 +5,13 @@ namespace App\Filament\Pages;
 use App\Console\Commands\CollectAsianHandicaps;
 use App\Jobs\CollectAsianHandicapsJob;
 use App\Models\AsianHandicap;
+use App\Models\CriteriaValue;
 use App\Models\League;
+use App\Models\MatchPrediction;
+use App\Models\TeamSeasonStat;
+use App\Services\CriteriaCalculator;
+use App\Services\PoissonCalculator;
+use App\Services\ProbabilityCalculator;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
@@ -13,6 +19,13 @@ use Illuminate\Support\Facades\Process;
 use App\Models\Team;
 use App\Models\MatchGame;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class Parser extends Page
 {
@@ -170,7 +183,13 @@ class Parser extends Page
             }
 
             // Сезон
-            $season = $match['season'] ?? null;
+            if (empty($season) && $matchDate) {
+                try {
+                    $season = \Carbon\Carbon::parse($matchDate)->year;
+                } catch (\Exception $e) {}
+            }
+
+
 
             // Статус (по наличию счёта)
             $status = (!is_null($match['homeScore']) && !is_null($match['awayScore'])) ? 'finished' : 'scheduled';
@@ -410,6 +429,331 @@ class Parser extends Page
             // Если ничего не вышло, возвращаем null
             return null;
         }
+    }
+
+
+
+    public function calculateStats()
+    {
+        $this->output = "⏳ Запуск расчёта статистики команд...\n";
+        Artisan::call('stats:calculate', ['--force' => true]);
+        $this->output .= Artisan::output();
+        $this->output .= "\n✅ Статистика обновлена!";
+    }
+
+
+
+    public function calculateCriteria()
+    {
+        $this->output = "⏳ Расчёт критериев 1–5...\n";
+
+        $matches = MatchGame::whereNotNull('home_score')
+            ->whereNotNull('away_score')
+            ->get();
+
+        $calculator = new CriteriaCalculator();
+        $saved = 0;
+
+        foreach ($matches as $match) {
+            $result = $calculator->calculateForMatch($match);
+            if ($result) {
+                CriteriaValue::updateOrCreate(
+                    ['match_game_id' => $match->id],
+                    $result
+                );
+                $saved++;
+            }
+        }
+
+        $this->output .= "✅ Сохранено критериев для $saved матчей.";
+    }
+
+
+    public function calculateProbabilities()
+    {
+        $this->output = "⏳ Расчёт вероятностей и эффективностей...\n";
+        $calculator = new ProbabilityCalculator();
+        $results = $calculator->calculateAll();
+        $this->output .= "✅ Сохранено прогнозов для " . count($results) . " матчей.";
+    }
+
+
+    public function calculatePoisson()
+    {
+        $this->output = "⏳ Расчёт критерия Пуассона (критерий 6)...\n";
+        $calculator = new PoissonCalculator();
+        $calculator->calculateAll();
+        $this->output .= "✅ Критерий Пуассона рассчитан.";
+    }
+
+
+
+
+    public function recalculateAverages()
+    {
+        $this->output = "⏳ Пересчёт средних вероятностей по всем критериям...\n";
+
+        $matches = MatchGame::whereHas('matchPredictions', function ($q) {
+            $q->whereNotNull('prob_home');
+        })->get();
+
+        $updated = 0;
+        foreach ($matches as $match) {
+            $predictions = $match->matchPredictions()->where('is_average', false)->get();
+            if ($predictions->isEmpty()) continue;
+
+            $avgProbHome = $predictions->avg('prob_home');
+            $avgProbDraw = $predictions->avg('prob_draw');
+            $avgProbAway = $predictions->avg('prob_away');
+            $avgEffHome = $predictions->avg('eff_home');
+            $avgEffDraw = $predictions->avg('eff_draw');
+            $avgEffAway = $predictions->avg('eff_away');
+
+            MatchPrediction::updateOrCreate(
+                [
+                    'match_game_id' => $match->id,
+                    'criteria_id' => null,
+                    'is_average' => true,
+                ],
+                [
+                    'prob_home' => $avgProbHome,
+                    'prob_draw' => $avgProbDraw,
+                    'prob_away' => $avgProbAway,
+                    'eff_home' => $avgEffHome,
+                    'eff_draw' => $avgEffDraw,
+                    'eff_away' => $avgEffAway,
+                ]
+            );
+            $updated++;
+        }
+
+        $this->output .= "✅ Обновлены средние для $updated матчей.";
+    }
+
+
+    public function exportCsv()
+    {
+        $this->output = "⏳ Генерация CSV-файла...\n";
+
+        $matches = MatchGame::with(['homeTeam', 'awayTeam', 'matchPredictions' => function ($q) {
+            $q->where('is_average', true);
+        }])->get();
+
+        if ($matches->isEmpty()) {
+            $this->output = "❌ Нет матчей с прогнозами.";
+            return;
+        }
+
+        $filename = 'predictions_' . date('Y-m-d_H-i-s') . '.csv';
+        $path = storage_path('app/public/' . $filename);
+
+        // Открываем файл с BOM для UTF-8
+        $handle = fopen($path, 'w');
+        fprintf($handle, "\xEF\xBB\xBF"); // BOM для UTF-8
+
+        // Заголовки
+        fputcsv($handle, [
+            'Дата', 'Лига', 'Хозяева', 'Гости',
+            'Кэф 1', 'Кэф X', 'Кэф 2',
+            'Вероятность P1', 'Вероятность PX', 'Вероятность P2',
+            'Эффективность E1', 'Эффективность EX', 'Эффективность E2',
+            'Прогноз'
+        ]);
+
+        foreach ($matches as $match) {
+            $avg = $match->matchPredictions->first();
+            if (!$avg) continue;
+            $probHome = $avg->prob_home ?? 0;
+            $probDraw = $avg->prob_draw ?? 0;
+            $probAway = $avg->prob_away ?? 0;
+
+            $maxProb = max($probHome, $probDraw, $probAway);
+            $prediction = '';
+            if ($maxProb == $probHome) $prediction = 'Победа хозяев';
+            elseif ($maxProb == $probDraw) $prediction = 'Ничья';
+            else $prediction = 'Победа гостей';
+
+            $date = $match->match_date ? \Carbon\Carbon::parse($match->match_date)->format('d.m.Y') : '';
+
+            fputcsv($handle, [
+                $date,
+                $match->league->name ?? '',
+                $match->homeTeam->name ?? '',
+                $match->awayTeam->name ?? '',
+                $match->odd_home ?? '',
+                $match->odd_draw ?? '',
+                $match->odd_away ?? '',
+                round($probHome * 100, 1) . '%',
+                round($probDraw * 100, 1) . '%',
+                round($probAway * 100, 1) . '%',
+                round($avg->eff_home ?? 0, 3),
+                round($avg->eff_draw ?? 0, 3),
+                round($avg->eff_away ?? 0, 3),
+                $prediction,
+            ]);
+        }
+
+        fclose($handle);
+
+        $url = asset('storage/' . $filename);
+        $this->output = "✅ CSV-файл сохранён: <a href='$url' target='_blank'>Скачать CSV</a> (откроется в новой вкладке)";
+        $this->dispatch('download-csv', ['url' => $url]);
+    }
+
+
+
+    public function exportExcel()
+    {
+        $this->output = "⏳ Генерация Excel-файла...\n";
+
+        $matches = MatchGame::with(['homeTeam', 'awayTeam', 'matchPredictions' => function ($q) {
+            $q->where('is_average', true);
+        }])->get();
+
+        if ($matches->isEmpty()) {
+            $this->output = "❌ Нет матчей с прогнозами.";
+            return;
+        }
+
+        // Создаём новый документ
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Заголовки (стилизованные)
+        $headers = [
+            'Дата', 'Лига', 'Хозяева', 'Гости',
+            'Кэф 1', 'Кэф X', 'Кэф 2',
+            'Вероятность P1', 'Вероятность PX', 'Вероятность P2',
+            'Эффективность E1', 'Эффективность EX', 'Эффективность E2',
+            'Прогноз'
+        ];
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        // Заполняем данные
+        $row = 2;
+        foreach ($matches as $match) {
+            $avg = $match->matchPredictions->first();
+            if (!$avg) continue;
+
+            $probHome = $avg->prob_home ?? 0;
+            $probDraw = $avg->prob_draw ?? 0;
+            $probAway = $avg->prob_away ?? 0;
+
+            $maxProb = max($probHome, $probDraw, $probAway);
+            $prediction = '';
+            if ($maxProb == $probHome) $prediction = 'Победа хозяев';
+            elseif ($maxProb == $probDraw) $prediction = 'Ничья';
+            else $prediction = 'Победа гостей';
+
+            $date = $match->match_date ? \Carbon\Carbon::parse($match->match_date)->format('d.m.Y') : '';
+
+            $sheet->setCellValue('A' . $row, $date);
+            $sheet->setCellValue('B' . $row, $match->league->name ?? '');
+            $sheet->setCellValue('C' . $row, $match->homeTeam->name ?? '');
+            $sheet->setCellValue('D' . $row, $match->awayTeam->name ?? '');
+            $sheet->setCellValue('E' . $row, $match->odd_home ?? '');
+            $sheet->setCellValue('F' . $row, $match->odd_draw ?? '');
+            $sheet->setCellValue('G' . $row, $match->odd_away ?? '');
+            $sheet->setCellValue('H' . $row, round($probHome * 100, 1) . '%');
+            $sheet->setCellValue('I' . $row, round($probDraw * 100, 1) . '%');
+            $sheet->setCellValue('J' . $row, round($probAway * 100, 1) . '%');
+            $sheet->setCellValue('K' . $row, round($avg->eff_home ?? 0, 3));
+            $sheet->setCellValue('L' . $row, round($avg->eff_draw ?? 0, 3));
+            $sheet->setCellValue('M' . $row, round($avg->eff_away ?? 0, 3));
+            $sheet->setCellValue('N' . $row, $prediction);
+
+            $row++;
+        }
+
+        // --- Применяем стили ---
+
+        // Стиль для заголовков (жирный, центрированный, фон)
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4CAF50']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]]
+        ];
+        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
+
+        // Автоширина для всех колонок
+        foreach (range('A', 'N') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Выравнивание данных
+        $sheet->getStyle('A2:N' . ($row-1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Чередование цветов строк
+        for ($i = 2; $i < $row; $i++) {
+            if ($i % 2 == 0) {
+                $sheet->getStyle('A' . $i . ':N' . $i)
+                    ->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('F5F5F5');
+            }
+        }
+
+        // Добавляем границы для всех ячеек с данными
+        $sheet->getStyle('A1:N' . ($row-1))
+            ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        // Сохраняем файл
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'predictions_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $path = storage_path('app/public/' . $filename);
+        $writer->save($path);
+
+        $url = asset('storage/' . $filename);
+        $this->output = "✅ Excel-файл сохранён: <a href='$url' target='_blank'>Скачать Excel</a> (откроется в новой вкладке)";
+
+        // Отправляем событие для автоматического скачивания
+        $this->dispatch('download-csv', ['url' => $url]);
+    }
+
+
+    public function clearStats()
+    {
+        $this->output = "⏳ Очистка таблицы team_season_stats...\n";
+        TeamSeasonStat::truncate();
+        $this->output .= "✅ Таблица team_season_stats очищена.";
+    }
+
+    public function clearCriteria()
+    {
+        $this->output = "⏳ Очистка таблицы criteria_values...\n";
+        CriteriaValue::truncate();
+        $this->output .= "✅ Таблица criteria_values очищена.";
+    }
+
+    public function clearPredictions()
+    {
+        $this->output = "⏳ Очистка таблицы match_predictions...\n";
+        MatchPrediction::truncate();
+        $this->output .= "✅ Таблица match_predictions очищена.";
+    }
+
+    public function clearHandicaps()
+    {
+        $this->output = "⏳ Очистка таблицы asian_handicaps...\n";
+        AsianHandicap::truncate();
+        $this->output .= "✅ Таблица asian_handicaps очищена.";
+    }
+
+    public function clearAll()
+    {
+        $this->output = "⏳ Очистка всех расчётных таблиц...\n";
+        TeamSeasonStat::truncate();
+        CriteriaValue::truncate();
+        MatchPrediction::truncate();
+        AsianHandicap::truncate();
+        MatchGame::truncate();
+        $this->output .= "✅ Все расчётные таблицы очищены.";
     }
 
 
