@@ -20,7 +20,7 @@
             </div>
         </x-filament::fieldset>
 
-        <x-filament::fieldset label="🚀 Этап 1. Сбор данных" class="p-4">
+        <x-filament::fieldset label="🚀  Сбор данных" class="p-4">
 
             <div class="flex flex-wrap gap-3">
 
@@ -53,7 +53,7 @@
         </x-filament::fieldset>
 
 
-        <x-filament::fieldset label="📊 Этап 2. Расчёт статистики" class="p-4">
+        <x-filament::fieldset label="📊  Расчёт статистики" class="p-4">
 
             <div class="flex flex-wrap gap-3">
 
@@ -74,7 +74,7 @@
         </x-filament::fieldset>
 
 
-        <x-filament::fieldset label="🎯 Этап 3. Вероятности и прогнозы" class="p-4">
+        <x-filament::fieldset label="🎯  Вероятности и прогнозы" class="p-4">
 
             <div class="flex flex-wrap gap-3">
 
@@ -91,7 +91,7 @@
         </x-filament::fieldset>
 
 
-        <x-filament::fieldset label="📄 Этап 4. Экспорт результатов" class="p-4">
+        <x-filament::fieldset label="📄 Экспорт результатов" class="p-4">
 
             <div class="flex flex-wrap gap-3">
 
