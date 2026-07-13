@@ -607,13 +607,12 @@ class Parser extends Page
     {
         $this->output = "⏳ Генерация Excel-файла с форами...\n";
 
-        // Берём все матчи с прогнозами (средние) и подгружаем связанные данные
         $matches = MatchGame::with([
             'league',
             'homeTeam',
             'awayTeam',
-            'asianHandicaps', // все записи AH
-            'averagePrediction', // средний прогноз
+            'asianHandicaps',
+            'averagePrediction',
         ])->get();
 
         if ($matches->isEmpty()) {
@@ -652,14 +651,16 @@ class Parser extends Page
             'Покуп_эф_гости',
         ];
 
-        $col = 'A';
+        $colIndex = 0;
         foreach ($headers as $header) {
-            $sheet->setCellValue($col . '1', $header);
-            $col++;
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $sheet->setCellValue($colLetter . '1', $header);
+            $colIndex++;
         }
 
-        // Стилизация заголовков
-        $sheet->getStyle('A1:' . ($col-1) . '1')->applyFromArray([
+        // Стилизация заголовков (используем $colIndex как количество колонок)
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
@@ -668,11 +669,8 @@ class Parser extends Page
         // --- Заполнение данными ---
         $row = 2;
         foreach ($matches as $match) {
-            // Получаем AH для равновесной и покупной
             $balanced = $match->asianHandicaps->where('type', 'balanced')->first();
             $purchase = $match->asianHandicaps->where('type', 'purchase')->first();
-
-            // Средний прогноз
             $avg = $match->averagePrediction;
 
             $data = [
@@ -702,24 +700,26 @@ class Parser extends Page
                 $avg->handicap_away_eff ?? '',
             ];
 
-            $col = 'A';
+            $colIndexData = 0;
             foreach ($data as $value) {
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndexData + 1);
                 // Форматируем проценты и числа
-                if (is_numeric($value) && str_contains($headers[array_search($value, $data)], 'вер')) {
-                    $sheet->setCellValue($col . $row, $value !== '' ? round($value * 100, 1) . '%' : '');
+                if (is_numeric($value) && str_contains($headers[$colIndexData] ?? '', 'вер')) {
+                    $sheet->setCellValue($colLetter . $row, $value !== '' ? round($value * 100, 1) . '%' : '');
                 } elseif (is_numeric($value)) {
-                    $sheet->setCellValue($col . $row, $value !== '' ? round($value, 3) : '');
+                    $sheet->setCellValue($colLetter . $row, $value !== '' ? round($value, 3) : '');
                 } else {
-                    $sheet->setCellValue($col . $row, $value);
+                    $sheet->setCellValue($colLetter . $row, $value);
                 }
-                $col++;
+                $colIndexData++;
             }
             $row++;
         }
 
         // Автоширина колонок
-        foreach (range('A', $col) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        foreach (range(1, $colIndex) as $i) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
         // Сохранение и скачивание
