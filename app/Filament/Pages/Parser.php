@@ -603,9 +603,138 @@ class Parser extends Page
         $this->dispatch('download-csv', ['url' => $url]);
     }
 
-
-
     public function exportExcel()
+    {
+        $this->output = "⏳ Генерация Excel-файла с форами...\n";
+
+        // Берём все матчи с прогнозами (средние) и подгружаем связанные данные
+        $matches = MatchGame::with([
+            'league',
+            'homeTeam',
+            'awayTeam',
+            'asianHandicaps', // все записи AH
+            'averagePrediction', // средний прогноз
+        ])->get();
+
+        if ($matches->isEmpty()) {
+            $this->output = "❌ Нет матчей для экспорта.";
+            return;
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // --- Заголовки ---
+        $headers = [
+            'Дата',
+            'Лига',
+            'Хозяева',
+            'Гости',
+
+            // Равновесная фора
+            'Равн_индекс_дом',
+            'Равн_индекс_гости',
+            'Равн_коэф_дом',
+            'Равн_коэф_гости',
+            'Равн_вер_дом',
+            'Равн_вер_гости',
+            'Равн_эф_дом',
+            'Равн_эф_гости',
+
+            // Покупная фора
+            'Покуп_индекс_дом',
+            'Покуп_индекс_гости',
+            'Покуп_коэф_дом',
+            'Покуп_коэф_гости',
+            'Покуп_вер_дом',
+            'Покуп_вер_гости',
+            'Покуп_эф_дом',
+            'Покуп_эф_гости',
+        ];
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $col++;
+        }
+
+        // Стилизация заголовков
+        $sheet->getStyle('A1:' . ($col-1) . '1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        // --- Заполнение данными ---
+        $row = 2;
+        foreach ($matches as $match) {
+            // Получаем AH для равновесной и покупной
+            $balanced = $match->asianHandicaps->where('type', 'balanced')->first();
+            $purchase = $match->asianHandicaps->where('type', 'purchase')->first();
+
+            // Средний прогноз
+            $avg = $match->averagePrediction;
+
+            $data = [
+                $match->match_date?->format('d.m.Y') ?? '',
+                $match->league->name ?? '',
+                $match->homeTeam->name ?? '',
+                $match->awayTeam->name ?? '',
+
+                // Равновесная
+                $balanced->home_handicap ?? '',
+                $balanced->away_handicap ?? '',
+                $balanced->home_odds ?? '',
+                $balanced->away_odds ?? '',
+                $avg->handicap_home_prob ?? '',
+                $avg->handicap_away_prob ?? '',
+                $avg->handicap_home_eff ?? '',
+                $avg->handicap_away_eff ?? '',
+
+                // Покупная
+                $purchase->home_handicap ?? '',
+                $purchase->away_handicap ?? '',
+                $purchase->home_odds ?? '',
+                $purchase->away_odds ?? '',
+                $avg->handicap_home_prob ?? '',
+                $avg->handicap_away_prob ?? '',
+                $avg->handicap_home_eff ?? '',
+                $avg->handicap_away_eff ?? '',
+            ];
+
+            $col = 'A';
+            foreach ($data as $value) {
+                // Форматируем проценты и числа
+                if (is_numeric($value) && str_contains($headers[array_search($value, $data)], 'вер')) {
+                    $sheet->setCellValue($col . $row, $value !== '' ? round($value * 100, 1) . '%' : '');
+                } elseif (is_numeric($value)) {
+                    $sheet->setCellValue($col . $row, $value !== '' ? round($value, 3) : '');
+                } else {
+                    $sheet->setCellValue($col . $row, $value);
+                }
+                $col++;
+            }
+            $row++;
+        }
+
+        // Автоширина колонок
+        foreach (range('A', $col) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Сохранение и скачивание
+        $filename = 'predictions_handicaps_' . date('Y-m-d_H-i-s') . '.xlsx';
+        $path = storage_path('app/public/' . $filename);
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($path);
+
+        $url = asset('storage/' . $filename);
+        $this->output = "✅ Excel-файл с форами сохранён: <a href='$url' target='_blank'>Скачать Excel</a>";
+        $this->dispatch('download-excel', ['url' => $url]);
+    }
+
+
+    public function exportExcel1()
     {
         $this->output = "⏳ Генерация Excel-файла...\n";
 
