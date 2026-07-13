@@ -653,20 +653,30 @@ class Parser extends Page
 
         $colIndex = 0;
         foreach ($headers as $header) {
-            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1);
             $sheet->setCellValue($colLetter . '1', $header);
             $colIndex++;
         }
 
-        // Стилизация заголовков (используем $colIndex как количество колонок)
-        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
-        $sheet->getStyle('A1:' . $lastColLetter . '1')->applyFromArray([
+        // --- Стилизация заголовков (ЗЕЛЁНАЯ ШАПКА) ---
+        $lastColLetter = Coordinate::stringFromColumnIndex($colIndex);
+        $headerStyle = [
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1E40AF']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E7D32']], // тёмно-зелёный
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
+        ];
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->applyFromArray($headerStyle);
 
-        // --- Заполнение данными ---
+        // --- Заполнение данными и стилизация строк ---
         $row = 2;
         foreach ($matches as $match) {
             $balanced = $match->asianHandicaps->where('type', 'balanced')->first();
@@ -702,7 +712,7 @@ class Parser extends Page
 
             $colIndexData = 0;
             foreach ($data as $value) {
-                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndexData + 1);
+                $colLetter = Coordinate::stringFromColumnIndex($colIndexData + 1);
                 // Форматируем проценты и числа
                 if (is_numeric($value) && str_contains($headers[$colIndexData] ?? '', 'вер')) {
                     $sheet->setCellValue($colLetter . $row, $value !== '' ? round($value * 100, 1) . '%' : '');
@@ -713,12 +723,39 @@ class Parser extends Page
                 }
                 $colIndexData++;
             }
+
+            // Стилизация строк (чередование цветов)
+            $rowRange = 'A' . $row . ':' . $lastColLetter . $row;
+            if ($row % 2 == 0) {
+                // Чётные строки – белый фон
+                $sheet->getStyle($rowRange)->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFFFFF']],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => 'D0D0D0'],
+                        ],
+                    ],
+                ]);
+            } else {
+                // Нечётные строки – светло-серый фон
+                $sheet->getStyle($rowRange)->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F5F5F5']],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => 'D0D0D0'],
+                        ],
+                    ],
+                ]);
+            }
+
             $row++;
         }
 
-        // Автоширина колонок
+        // --- Автоширина колонок ---
         foreach (range(1, $colIndex) as $i) {
-            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $colLetter = Coordinate::stringFromColumnIndex($i);
             $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
