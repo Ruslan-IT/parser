@@ -8,6 +8,7 @@ use App\Models\AsianHandicap;
 use App\Models\CriteriaValue;
 use App\Models\League;
 use App\Models\MatchPrediction;
+use App\Models\SavedUrlSet;
 use App\Models\TeamSeasonStat;
 use App\Services\CriteriaCalculator;
 use App\Services\PoissonCalculator;
@@ -41,6 +42,8 @@ class Parser extends Page
     public $savedCount = 0;
     public $matchesList = [];
     public $urls = ''; // новое свойство для URL
+
+    public $selectedUrlSet = '';
 
    /* public function runParser(){
 
@@ -754,6 +757,108 @@ class Parser extends Page
         AsianHandicap::truncate();
         MatchGame::truncate();
         $this->output .= "✅ Все расчётные таблицы очищены.";
+    }
+
+
+
+
+    public function calculateFuturePredictions()
+    {
+        $this->output = "⏳ Расчёт прогнозов для будущих матчей...\n";
+
+        $futureMatches = MatchGame::where('match_status', 'scheduled')->get();
+
+        if ($futureMatches->isEmpty()) {
+            $this->output .= "❌ Нет будущих матчей. Сначала спарсите расписание (/fixtures/).";
+            return;
+        }
+
+        // 1. Критерии 1–5
+        $criteriaCalculator = new CriteriaCalculator();
+        $criteriaSaved = 0;
+        foreach ($futureMatches as $match) {
+            $result = $criteriaCalculator->calculateForMatch($match);
+            if ($result) {
+                CriteriaValue::updateOrCreate(
+                    ['match_game_id' => $match->id],
+                    $result
+                );
+                $criteriaSaved++;
+            }
+        }
+        $this->output .= "✅ Сохранено критериев для $criteriaSaved будущих матчей.\n";
+
+        // 2. Вероятности (критерии 1–6)
+        $probCalculator = new ProbabilityCalculator();
+        $probSaved = 0;
+        foreach ($futureMatches as $match) {
+            $result = $probCalculator->calculateForMatch($match);
+            if ($result) {
+                $probSaved++;
+            }
+        }
+        $this->output .= "✅ Сохранено вероятностей для $probSaved будущих матчей.\n";
+
+        // 3. Пуассон (критерий 6)
+        $poissonCalculator = new PoissonCalculator();
+        $poissonSaved = 0;
+        foreach ($futureMatches as $match) {
+            if ($poissonCalculator->calculateForMatch($match)) {
+                $poissonSaved++;
+            }
+        }
+        $this->output .= "✅ Сохранено Пуассона для $poissonSaved будущих матчей.\n";
+
+        // 4. Пересчёт средних
+        $this->recalculateAveragesForMatches($futureMatches);
+
+        $this->output .= "🎯 Прогнозы для будущих матчей рассчитаны! Перейдите в раздел «Будущие матчи» для просмотра.";
+    }
+
+    private function recalculateAveragesForMatches($matches)
+    {
+        $updated = 0;
+        foreach ($matches as $match) {
+            $predictions = $match->matchPredictions()->where('is_average', false)->get();
+            if ($predictions->isEmpty()) continue;
+
+            $avgProbHome = $predictions->avg('prob_home');
+            $avgProbDraw = $predictions->avg('prob_draw');
+            $avgProbAway = $predictions->avg('prob_away');
+            $avgEffHome = $predictions->avg('eff_home');
+            $avgEffDraw = $predictions->avg('eff_draw');
+            $avgEffAway = $predictions->avg('eff_away');
+
+            MatchPrediction::updateOrCreate(
+                [
+                    'match_game_id' => $match->id,
+                    'criteria_id' => null,
+                    'is_average' => true,
+                ],
+                [
+                    'prob_home' => $avgProbHome,
+                    'prob_draw' => $avgProbDraw,
+                    'prob_away' => $avgProbAway,
+                    'eff_home' => $avgEffHome,
+                    'eff_draw' => $avgEffDraw,
+                    'eff_away' => $avgEffAway,
+                ]
+            );
+            $updated++;
+        }
+        $this->output .= "✅ Обновлены средние для $updated будущих матчей.\n";
+    }
+
+
+
+    public function loadUrlSet()
+    {
+        if ($this->selectedUrlSet) {
+            $set = SavedUrlSet::find($this->selectedUrlSet);
+            if ($set) {
+                $this->urls = $set->urls;
+            }
+        }
     }
 
 

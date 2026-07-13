@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Models\MatchPrediction;
+
 class MatchGame extends Model
 {
 
@@ -62,6 +64,11 @@ class MatchGame extends Model
     public function matchPredictions()
     {
         return $this->hasMany(MatchPrediction::class);
+    }
+
+    public function averagePrediction()
+    {
+        return $this->hasOne(MatchPrediction::class)->where('is_average', true);
     }
 
 

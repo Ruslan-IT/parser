@@ -54,39 +54,39 @@ class MatchPredictionsTable
                     ->default('—'),
 
                 // Вероятности
-                TextColumn::make('prob_home')
+                /*TextColumn::make('prob_home')
                     ->label('P1 (%)')
                     ->formatStateUsing(fn($state) => $state ? number_format($state * 100, 1) . '%' : '—')
-                    ->alignCenter(),
+                    ->alignCenter(),*/
 
-                TextColumn::make('prob_draw')
+               /* TextColumn::make('prob_draw')
                     ->label('PX (%)')
                     ->formatStateUsing(fn($state) => $state ? number_format($state * 100, 1) . '%' : '—')
-                    ->alignCenter(),
+                    ->alignCenter(),*/
 
-                TextColumn::make('prob_away')
+                /*TextColumn::make('prob_away')
                     ->label('P2 (%)')
                     ->formatStateUsing(fn($state) => $state ? number_format($state * 100, 1) . '%' : '—')
-                    ->alignCenter(),
+                    ->alignCenter(),*/
 
                 // Эффективности
-                TextColumn::make('eff_home')
+                /*TextColumn::make('eff_home')
                     ->label('E1')
                     ->formatStateUsing(fn($state) => $state !== null ? number_format($state, 3) : '—')
                     ->alignCenter()
-                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),
+                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),*/
 
-                TextColumn::make('eff_draw')
+                /*TextColumn::make('eff_draw')
                     ->label('EX')
                     ->formatStateUsing(fn($state) => $state !== null ? number_format($state, 3) : '—')
                     ->alignCenter()
-                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),
+                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),*/
 
-                TextColumn::make('eff_away')
+                /*TextColumn::make('eff_away')
                     ->label('E2')
                     ->formatStateUsing(fn($state) => $state !== null ? number_format($state, 3) : '—')
                     ->alignCenter()
-                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),
+                    ->color(fn($state) => $state > 1 ? 'success' : ($state < 1 ? 'danger' : null)),*/
 
                 // Дополнительно: информация о матче
                 TextColumn::make('matchGame.match_date')

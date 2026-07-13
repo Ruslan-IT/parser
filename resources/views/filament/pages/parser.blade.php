@@ -1,8 +1,24 @@
 <x-filament::page>
     <div class="space-y-6">
 
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Выбрать сохранённый набор ссылок
+            </label>
+            <select wire:model="selectedUrlSet" wire:change="loadUrlSet" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                <option value="">-- Выберите набор --</option>
+                @foreach(App\Models\SavedUrlSet::orderBy('name')->get() as $set)
+                    <option value="{{ $set->id }}">{{ $set->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
         {{-- Блок настройки парсинга --}}
         <x-filament::fieldset label="Настройки парсинга" class="p-4">
+
+
+
+
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -84,6 +100,9 @@ https://www.betexplorer.com/football/brazil/serie-b-2024/" class="block w-full r
 
                         <strong>Где смотреть:</strong> В разделе <strong>«Статистика команд»</strong> в левом меню.<br>
                         <strong>Как проверить:</strong> После выполнения появится сообщение «✅ Статистика обновлена!».
+                        <strong>Если статистика не обновилась</strong>
+                        Значит, в базе нет завершённых матчей!
+
                     </div>
                 </div>
                 <br>
@@ -148,6 +167,19 @@ https://www.betexplorer.com/football/brazil/serie-b-2024/" class="block w-full r
                         <strong>Что делает:</strong> Для каждого матча вычисляет средние вероятности и эффективности по всем критериям. Сохраняет одну строку с <code>is_average = true</code> в <code>match_predictions</code>.<br>
                         <strong>Где смотреть:</strong> В разделе <strong>«Прогнозы»</strong>, отфильтруйте по <strong>Критерий = Среднее</strong>.<br>
                         <strong>Как проверить:</strong> После выполнения сообщение «✅ Обновлены средние для X матчей».
+                    </div>
+                </div>
+
+
+                <div>
+                    <x-filament::button wire:click="calculateFuturePredictions" wire:loading.attr="disabled">
+                        🔮 Рассчитать прогнозы для будущих матчей
+                    </x-filament::button>
+                    <div class="text-sm text-gray-600 mt-1">
+                        <strong>Что делает:</strong> Запускает полный цикл расчётов (критерии, вероятности, Пуассон, средние) только для матчей со статусом «будущие».<br>
+                        <strong>Где смотреть:</strong> После расчёта перейдите в раздел <strong>«Будущие матчи»</strong> в левом меню.<br>
+                        <strong>Как проверить:</strong> В выводе будет прогресс по каждому этапу.<br>
+                        <strong>Пример ссылки:</strong>https://www.betexplorer.com/football/sweden/superettan/fixtures/
                     </div>
                 </div>
 
