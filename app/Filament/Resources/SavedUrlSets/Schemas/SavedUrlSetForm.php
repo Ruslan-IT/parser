@@ -20,7 +20,7 @@ class SavedUrlSetForm
                 Textarea::make('urls')
                     ->label('Ссылки (каждая с новой строки)')
                     ->required()
-                    ->rows(10)
+                    ->rows(25)
                     ->helperText('Вставляйте ссылки на турниры, каждая с новой строки.')
                     ->columnSpanFull(),
             ]);
