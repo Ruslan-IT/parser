@@ -16,11 +16,13 @@ class SavedUrlSetForm
                     ->label('Название набора')
                     ->required()
                     ->maxLength(255),
+
                 Textarea::make('urls')
                     ->label('Ссылки (каждая с новой строки)')
                     ->required()
                     ->rows(10)
-                    ->helperText('Вставляйте ссылки на турниры, каждая с новой строки.'),
+                    ->helperText('Вставляйте ссылки на турниры, каждая с новой строки.')
+                    ->columnSpanFull(),
             ]);
     }
 }

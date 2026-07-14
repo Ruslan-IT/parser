@@ -9,29 +9,6 @@ import { chromium } from 'playwright';
 
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-    // Если на странице есть ссылка "Show all results",
-    // переходим на неё.
-    const resultsLink = page.locator('#js-leagueresults-link a');
-
-    if (await resultsLink.count() > 0) {
-
-        const href = await resultsLink.getAttribute('href');
-
-        if (href) {
-
-            const resultsUrl = new URL(href, page.url()).toString();
-
-            console.log('Opening results page:', resultsUrl);
-
-            await page.goto(resultsUrl, {
-                waitUntil: 'domcontentloaded',
-            });
-
-        }
-
-    }
-
     await page.waitForTimeout(3000);
 
 
