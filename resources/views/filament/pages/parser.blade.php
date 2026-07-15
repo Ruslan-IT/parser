@@ -53,6 +53,15 @@ https://www.betexplorer.com/football/brazil/serie-b-2024/" class="block w-full r
                 </div>
                 <br>
 
+                <x-filament::button wire:click="runQueueWorker" wire:loading.attr="disabled">
+                    ⚙️ Обработать очередь (однократно)
+                </x-filament::button>
+                <div class="text-sm text-gray-600 mt-1">
+                    <strong>Внимание:</strong> Эта кнопка запускает воркер на один цикл. {{--Для постоянной работы рекомендуется настроить supervisor.--}}
+                </div>
+
+                <br>
+
                 {{-- Кнопка 2 --}}
               {{--  <div class="border rounded-lg p-4 mb-6 bg-gray-50">
                     <x-filament::button wire:click="collectAh" wire:loading.attr="disabled">

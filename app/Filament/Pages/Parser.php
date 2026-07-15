@@ -82,7 +82,7 @@ class Parser extends Page
 
 
 
-    public function runParser()
+    /*public function runParser()
     {
         if (empty($this->urls)) {
             $this->output = "❌ Пожалуйста, введите хотя бы одну ссылку.";
@@ -150,7 +150,35 @@ class Parser extends Page
             ->take(10)
             ->get()
             ->toArray();
+    }*/
+
+
+    public function runParser()
+    {
+        if (empty($this->urls)) {
+            $this->output = "❌ Пожалуйста, введите хотя бы одну ссылку.";
+            return;
+        }
+
+        $urlList = array_filter(array_map('trim', explode("\n", $this->urls)));
+        if (empty($urlList)) {
+            $this->output = "❌ Нет корректных ссылок.";
+            return;
+        }
+
+        // Диспатчим по одному заданию на каждый URL
+        foreach ($urlList as $url) {
+            \App\Jobs\ParseBetExplorerUrlJob::dispatch($url);
+        }
+
+        $count = count($urlList);
+        $this->output = "✅ Запущено $count заданий на парсинг в очереди. Результаты появятся после обработки.";
+
+        // Очищаем список последних матчей, так как они ещё не загружены
+        $this->matchesList = [];
     }
+
+
 
 
     private function saveMatchesToDatabase(array $matches): int
@@ -273,7 +301,7 @@ class Parser extends Page
     }
 
 
-    public function collectAhBatch()
+    public function collectAhBatch1()
     {
         // Подсчитываем количество матчей без AH
         $total = MatchGame::doesntHave('asianHandicaps')
@@ -311,6 +339,31 @@ class Parser extends Page
         }
 
         $this->output .= "✅ Пакетный сбор AH завершён! Обработано $processed матчей.";
+    }
+
+
+    public function collectAhBatch()
+    {
+        $total = MatchGame::doesntHave('asianHandicaps')
+            ->whereNotNull('url')
+            ->count();
+
+        if ($total == 0) {
+            $this->output = "✅ Все матчи уже имеют азиатские форы.";
+            return;
+        }
+
+        // Получаем ID всех матчей без AH
+        $matchIds = MatchGame::doesntHave('asianHandicaps')
+            ->whereNotNull('url')
+            ->pluck('id');
+
+        // Диспатчим по одному заданию на каждый матч
+        foreach ($matchIds as $id) {
+            \App\Jobs\CollectAsianHandicapJob::dispatch($id);
+        }
+
+        $this->output = "✅ Запущено " . $matchIds->count() . " заданий на сбор AH в очереди. Они будут обработаны в фоне.";
     }
 
 
@@ -1026,6 +1079,50 @@ class Parser extends Page
                 $this->urls = $set->urls;
             }
         }
+    }
+
+
+
+
+    public function runQueueWorker2()
+    {
+        $this->output = "⏳ Запуск обработки очереди...\n";
+
+        $command = 'php ' . base_path('artisan') . ' queue:work --stop-when-empty';
+
+        // Увеличиваем таймаут до 600 секунд (10 минут) – должно хватить для всех заданий
+        $result = Process::path(base_path())
+            ->timeout(600)
+            ->run($command);
+
+        $this->output .= $result->output();
+        if ($result->failed()) {
+            $this->output .= "\n❌ Ошибка: " . $result->errorOutput();
+        } else {
+            $this->output .= "\n✅ Очередь обработана*.";
+        }
+    }
+
+    public function runQueueWorker()
+    {
+        $this->output = "⏳ Запуск обработки очереди в фоновом режиме...\n";
+
+        $logFile = storage_path('logs/queue_work.log');
+        $command = 'php ' . base_path('artisan') . ' queue:work --stop-when-empty';
+
+        // Определяем ОС и запускаем в фоне
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows: start /B запускает процесс в фоне без окна
+            $fullCommand = 'start /B ' . $command . ' >> ' . $logFile . ' 2>&1';
+        } else {
+            // Linux: & запускает в фоне
+            $fullCommand = $command . ' >> ' . $logFile . ' 2>&1 &';
+        }
+
+        exec($fullCommand);
+
+        $this->output .= "✅ Очередь запущена в фоне. Проверьте базу данных через несколько минут.\n";
+        $this->output .= "📄 Лог: " . $logFile;
     }
 
 
